@@ -1,5 +1,5 @@
 var browser_conf = {
-  "sparql_endpoint": "https://opencitations.net/index/sparql",
+  "sparql_endpoint": "https://browse.opencitations.net/sparql/index",
 
   "prefixes": [
       {"prefix":"cito","iri":"http://purl.org/spar/cito/"},
@@ -18,36 +18,13 @@ var browser_conf = {
 
   "categories":{
     "coci_citation": {
-          "rule": "coci\/ci\/.*",
+          "rule": "ci\/.*",
           "query": [`
-            SELECT DISTINCT ?iri ?short_iri ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
-                WHERE  {
-                  GRAPH <https://w3id.org/oc/index/coci/> {
-                    BIND(<https://w3id.org/oc/index/[[VAR]]> as ?iri) .
-                    OPTIONAL {
-                      BIND(REPLACE(STR(?iri), 'https://w3id.org/oc/index/coci/ci/', '', 'i') as ?short_iri) .
-                      ?iri cito:hasCitingEntity ?citing_doi_iri .
-                      BIND(REPLACE(STR(?citing_doi_iri), 'http://dx.doi.org/', '', 'i') as ?citing_doi) .
-                      ?iri cito:hasCitedEntity ?cited_doi_iri .
-                      BIND(REPLACE(STR(?cited_doi_iri), 'http://dx.doi.org/', '', 'i') as ?cited_doi) .
-                      ?iri cito:hasCitationCreationDate ?creationdate .
-                      ?iri cito:hasCitationTimeSpan ?timespan .
-                    }
-
-                    OPTIONAL{
-      		               ?iri a cito:JournalSelfCitation .
-      		               BIND('True' as ?c_isJSelfCitation).
-      		          }
-
-                    OPTIONAL{
-      		               ?iri a cito:AuthorSelfCitation .
-      		               BIND('True' as ?c_isASelfCitation).
-      		          }
-
-                    BIND(COALESCE(?c_isJSelfCitation, "False") AS ?isJSelfCitation) .
-                    BIND(COALESCE(?c_isASelfCitation, "False") AS ?isASelfCitation) .
-                  }
-                }
+            SELECT ?citation ?citing_entity ?cited_entity WHERE {
+              ?citation a cito:Citation .
+              ?citation cito:hasCitingEntity ?citing_entity .
+              ?citation cito:hasCitedEntity <https://w3id.org/oc/index/[[VAR]]> .
+            }
           `],
           "links": {
             "short_iri": {"field":"iri","prefix":""}

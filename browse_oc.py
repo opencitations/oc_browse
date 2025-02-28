@@ -45,15 +45,14 @@ active = {
 
 # URL Mapping
 urls = (
-    "/", "Main",
     "/sparql/index", "SparqlIndex",  # Add specific endpoint routes
     "/sparql/meta", "SparqlMeta",
-    '/search', 'Search',
-    '/favicon.ico', 'Favicon'
+    '/favicon.ico', 'Favicon',
+    "/(.+)", "BrowserIndex"
 )
 
 # Set the web logger
-web_logger = WebLogger("search.opencitations.net", c["log_dir"], [
+web_logger = WebLogger("browse.opencitations.net", c["log_dir"], [
     "REMOTE_ADDR",        # The IP address of the visitor
     "HTTP_USER_AGENT",    # The browser type of the visitor
     "HTTP_REFERER",       # The URL of the page that called your program
@@ -219,23 +218,6 @@ class Sparql:
             "Not a valid request"
         )
 
-class Main:
-    def GET(self):
-        web_logger.mes()
-        current_subdomain = web.ctx.host.split('.')[0].lower()
-        sparql_endpoint_meta= browse_config["sparql_endpoint"]["meta"]
-        sparql_endpoint_index= browse_config["sparql_endpoint"]["index"]
-        return render.search(
-            active="", 
-            sp_title="", 
-            sparql_endpoint="", 
-            sparql_endpoint_meta=sparql_endpoint_meta,
-            sparql_endpoint_index=sparql_endpoint_index,
-            query_string="", 
-            current_subdomain=current_subdomain, 
-            render=render
-        )
-
 
 class SparqlEndpoint(Sparql):
     def __init__(self,value):
@@ -256,32 +238,40 @@ class SparqlMeta(Sparql):
                        "sparql meta", 
                        "/sparql/meta")
 
-class Search:
-    def GET(self):
+class Browser:
+    def __init__(self, render_page):
+        self.render_page = render_page
+
+    def GET(self, resource_id):
         web_logger.mes()
         current_subdomain = web.ctx.host.split('.')[0].lower()
-        query = web.input(text="", rule="citingdoi")  # rule default a citingdoi
         sparql_endpoint_json = json.dumps(browse_config["sparql_endpoint"])
-        return render.search(
+        return self.render_page(
+            resource_id=resource_id,
             active="", 
             sp_title="", 
             sparql_endpoint=sparql_endpoint_json, 
             sparql_endpoint_meta=browse_config["sparql_endpoint"]["meta"],
             sparql_endpoint_index=browse_config["sparql_endpoint"]["index"],
-            query_string=f"text={query.text}&rule={query.rule}", 
+            query_string="", 
             current_subdomain=current_subdomain, 
             render=render
-        )
+            )
+
+
+class BrowserIndex(Browser):
+    def __init__(self):
+        Browser.__init__(self, render.browser_index)
 
 # Run the application
 if __name__ == "__main__":
     # Add startup log
     print("Starting SPARQL OpenCitations web application...")
-    print(f"Configuration: Base URL={browse_config['search_base_url']}")
+    print(f"Configuration: Base URL={browse_config['browse_base_url']}")
     print(f"Sync enabled: {browse_config['sync_enabled']}")
     
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='SEARCH OpenCitations web application')
+    parser = argparse.ArgumentParser(description='BROWSE OpenCitations web application')
     parser.add_argument(
         '--sync-static',
         action='store_true',
